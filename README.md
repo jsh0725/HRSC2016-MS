@@ -1,126 +1,106 @@
-# HRSC2016-MS OBB Ship Detection Project
+# HRSC2016-MS OBB 선박 탐지 프로젝트 정리
 
-## 1) 프로젝트 개요
-- 목표: 해상 선박 탐지를 위해 회전 바운딩 박스(OBB) 기반 데이터셋을 구성하고 YOLO OBB 모델을 학습/평가
-- 데이터: HRSC2016-MS (`archive`)
-- 클래스: 단일 클래스 `ship`
+## 1. 프로젝트 목적
+- HRSC2016-MS 데이터셋을 OBB(회전 바운딩 박스) 형식으로 전처리
+- YOLO OBB 모델(`yolo11n-obb.yaml`) 학습
+- 학습 결과(지표 + 시각화 이미지)를 정리하여 비교/분석 가능 상태로 구성
 
-## 2) 폴더 구조
-- `archive/`
-  - `AllImages/*.bmp`
-  - `Annotations/*.xml`
-  - `ImageSets/{train,val,test,trainval}.txt`
-- `processed_obb/`
-  - `images/{train,val,test}/*.jpg`
-  - `labels/{train,val,test}/*.txt` (YOLO OBB 라벨)
-  - `dataset.yaml`, `summary.json`
-- `runs/obb/runs_yolo_obb/exp01/`
-  - 학습 로그, 시각화, 가중치
-- `results/exp01/`
-  - 중요 PNG 시각화 파일 정리본
+## 2. 현재 폴더 구조
+| 경로 | 설명 |
+|---|---|
+| `archive/` | 원본 데이터(BMP, XML, split txt) | -> git에는 미업로드
+| `processed_obb/` | OBB 전처리 결과(`images/`, `labels/`, `dataset.yaml`) | -> git에는 미업로드
+| `runs/obb/runs_yolo_obb/exp01/` | 학습(Train)산출물 폴더, 에폭별 학습로그 + 학습 검증 시각화 + PR/F1 곡선 + confusion matrix + 샘플 배치 이미지 + weight 포함 |
+| `runs/obb/runs_eval_obb/test_exp01/` | 학습 완료 모델의 평가/추론 산출물 폴더, 테스트셋 정량 지표 + 테스트 이미지 예측 시각화(예측 박스 오버레이) 포함 |
+| `results/exp01/` | 중요한 PNG 시각화 파일만 재정리한 폴더 |
+| `processing_obb.py` | OBB 전처리 스크립트 |
+| `train_yolo_obb.py` | YOLO OBB 학습 + epoch 메트릭/곡선 저장 |
+| `eval_test_yolo_obb.py` | 테스트셋 평가/시각화 스크립트 |
 
-## 3) 코드 파일
-- `processing_obb.py`
-  - HRSC XML(`robndbox`)을 YOLO OBB 라벨로 변환
-  - `dataset.yaml` 자동 생성
-- `train_yolo_obb.py`
-  - OBB 데이터셋 학습
-  - epoch 메트릭 추출(`epoch_metrics.json`) 및 그래프 저장
-- `eval_test_yolo_obb.py`
-  - test split 정량 평가
-  - test 이미지 예측 시각화 저장
-
-## 4) 전처리 결과 요약
-`processed_obb/summary.json` 기준:
-- train: 이미지 610, 객체 2453
-- val: 이미지 460, 객체 1953
-- test: 이미지 610, 객체 3249
-- 누락/손상: 0
-
-## 5) 실행 순서
-1. 전처리
+## 3. 실행 순서
 ```bash
 python processing_obb.py
-```
-2. 학습
-```bash
 python train_yolo_obb.py
-```
-3. 테스트 평가/시각화
-```bash
 python eval_test_yolo_obb.py
 ```
 
-## 6) 학습 성능 요약
-`runs/obb/runs_yolo_obb/exp01/results.csv` 마지막 epoch(150) 기준:
-- precision(B): `0.87319`
-- recall(B): `0.72248`
-- mAP50(B): `0.84542`
-- mAP50-95(B): `0.63890`
+## 4. 전처리 결과 요약
+기준 파일: `processed_obb/summary.json`
 
-## 7) runs 폴더 산출물 해설
-기준 경로: `runs/obb/runs_yolo_obb/exp01/`
+| Split | 입력 ID | 출력 이미지 | 출력 라벨 | 객체 수 | 누락/오류 |
+|---|---:|---:|---:|---:|---:|
+| train | 610 | 610 | 610 | 2453 | 0 |
+| val | 460 | 460 | 460 | 1953 | 0 |
+| test | 610 | 610 | 610 | 3249 | 0 |
 
-### 7.1 학습 설정/로그 파일
-- `args.yaml`
-  - 실제 학습에 적용된 하이퍼파라미터 전체 스냅샷
-  - 재현 실험 시 기준 파일
-- `results.csv`
-  - epoch별 수치 로그(손실, P/R, mAP, lr 등)
-  - 정량 비교의 원본 테이블
-- `epoch_metrics.json`
-  - `results.csv`에서 추출한 핵심 곡선 데이터(사용자 정의 저장본)
+## 5. 학습 설정 요약
+기준 파일: `runs/obb/runs_yolo_obb/exp01/args.yaml`
 
-### 7.2 핵심 시각화 파일
-- `results.png`
-  - 학습 전반 추세를 요약한 통합 그래프
-- `BoxPR_curve.png`
-  - Precision-Recall 곡선
-  - 임계값 변화에 따른 탐지 성능 비교 핵심
-- `BoxF1_curve.png`
-  - F1 점수 곡선
-  - precision/recall 균형 관점 최적 지점 확인
-- `BoxP_curve.png`
-  - precision 중심 추세 확인
-- `BoxR_curve.png`
-  - recall 중심 추세 확인
-- `confusion_matrix.png`
-  - 절대 개수 기준 오탐/미탐 패턴
-- `confusion_matrix_normalized.png`
-  - 정규화 비율 기준 오류 패턴
-- `loss_curve.png`
-  - train/val 손실 곡선(사용자 커스텀)
-- `accuracy_curve.png`
-  - accuracy-like 지표(mAP 계열) 곡선(사용자 커스텀)
+| 항목 | 값 |
+|---|---|
+| task | `obb` |
+| model | `yolo11n-obb.yaml` |
+| data | `processed_obb/dataset.yaml` |
+| epochs | `150` |
+| imgsz | `1024` |
+| batch | `8` |
+| patience | `30` |
+| device | `0` (GPU) |
+| pretrained | `false` |
 
-### 7.3 이미지 샘플 파일
-- `labels.jpg`
-  - 데이터셋 라벨 분포/샘플 확인용 요약 이미지
-- `train_batch0.jpg`, `train_batch1.jpg`, `train_batch2.jpg`, `train_batch10780.jpg` 등
-  - 학습 배치 샘플(증강 포함) 시각 확인
-- `val_batch0_labels.jpg`, `val_batch1_labels.jpg`, `val_batch2_labels.jpg`
-  - 검증 배치 GT 라벨 표시 이미지
-- `val_batch0_pred.jpg`, `val_batch1_pred.jpg`, `val_batch2_pred.jpg`
-  - 동일 검증 배치의 모델 예측 결과 이미지
+## 6. 학습 성능 요약 (최종 epoch)
+기준 파일: `runs/obb/runs_yolo_obb/exp01/results.csv` 마지막 행(epoch 150)
 
-### 7.4 가중치 파일
-- `weights/best.pt`
-  - 검증 성능 기준 최고 체크포인트
-- `weights/last.pt`
-  - 마지막 epoch 체크포인트
+| 지표 | 값 |
+|---|---:|
+| precision(B) | 0.87319 |
+| recall(B) | 0.72248 |
+| mAP50(B) | 0.84542 | -> 탐지 성능(약 84.5%)
+| mAP50-95(B) | 0.63890 |
+| train box/cls/dfl/angle loss | 0.77847 / 0.62511 / 1.20347 / 0.01031 |
+| val box/cls/dfl/angle loss | 0.91780 / 0.75775 / 1.34508 / 0.01078 |
 
-## 8) results 폴더(정리본) 해설
-기준 경로: `results/exp01/`
+## 7. 시각화 파일 매칭(의미 정리)
 
-- `overview/`
-  - `results.png`
-- `metrics_curves/`
-  - `BoxPR_curve.png`, `BoxF1_curve.png`, `BoxP_curve.png`, `BoxR_curve.png`
-- `confusion/`
-  - `confusion_matrix.png`, `confusion_matrix_normalized.png`
-- `custom_curves/`
-  - `loss_curve.png`, `accuracy_curve.png`
+### 7.1 `results/exp01/overview`
+| 파일 | 의미 |
+|---|---|
+| `results.png` | 전체 학습 추세를 요약한 종합 그래프(손실/성능) |
 
-## 9) Git 업로드 권장
-- 커밋 권장: 코드 + README + `.gitignore`
-- 제외 권장: `archive/`, `processed_obb/`, `runs/`, `results/`, `*.pt`
+### 7.2 `results/exp01/metrics_curves`
+| 파일 | 의미 |
+|---|---|
+| `BoxPR_curve.png` | Precision-Recall 곡선 |
+| `BoxF1_curve.png` | F1 곡선(precision/recall 균형) |
+| `BoxP_curve.png` | precision 변화 추세 |
+| `BoxR_curve.png` | recall 변화 추세 |
+
+### 7.3 `results/exp01/confusion`
+| 파일 | 의미 |
+|---|---|
+| `confusion_matrix.png` | 혼동행렬(절대 개수 기준) |
+| `confusion_matrix_normalized.png` | 혼동행렬(정규화 비율 기준) |
+
+### 7.4 `results/exp01/custom_curves`
+| 파일 | 의미 |
+|---|---|
+| `loss_curve.png` | train/val 손실 곡선(커스텀 저장본) |
+| `accuracy_curve.png` | accuracy-like(mAP 계열) 곡선(커스텀 저장본) |
+
+## 8. 추가 참고: 학습 배치 샘플 이미지(원본 runs 폴더)
+경로: `runs/obb/runs_yolo_obb/exp01/`
+
+| 파일 | 의미 |
+|---|---|
+| `train_batch*.jpg` | 학습 배치 입력 샘플(증강 포함) |
+| `val_batch*_labels.jpg` | 검증 배치 GT 라벨 시각화 |
+| `val_batch*_pred.jpg` | 같은 검증 배치에 대한 모델 예측 결과 |
+| `labels.jpg` | 데이터셋 라벨 요약 시각화 |
+
+## 9. 가중치 파일
+경로: `runs/obb/runs_yolo_obb/exp01/weights/`
+
+| 파일 | 의미 |
+|---|---|
+| `best.pt` | 검증 성능 기준 최고 체크포인트 |
+| `last.pt` | 마지막 epoch 체크포인트 |
