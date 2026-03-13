@@ -13,21 +13,29 @@ from ultralytics import YOLO
 # Simple run: python train_yolo_obb.py
 DATASET_YAML = Path("processed_obb") / "dataset.yaml"
 # Default is YOLO11n OBB
-MODEL_SOURCE = "yolo11n-obb.yaml"  # .pt or .yaml 
+MODEL_SOURCE = "yolo11s-obb.pt"  # .pt or .yaml 
 PROJECT_DIR = Path("runs_yolo_obb")
-RUN_NAME = "exp02"
+RUN_NAME = "exp04"  # 학습 결과가 저장될 폴더 이름, 필요에 따라 변경
 
 EPOCHS = 250 # 충분히 긴 학습을 위해 150으로 설정, 필요에 따라 조정 가능
 IMGSZ = 1024
-BATCH = 6
+BATCH = 4
 WORKERS = 4
-LR0 = 0.005
+LR0 = 0.0015
 COS_LR = True
-WEIGHT_DECAY=0.0003
+WEIGHT_DECAY=0.0005
+
 DEVICE = 0  # use "cpu" for CPU 
 SEED = 42
 PATIENCE = 50
-PRETRAINED = True
+PRETRAINED = True # True로 설정하면 모델이 사전 학습된 가중치를 사용하여 초기화된다. False로 설정하면 모델이 무작위 가중치로 초기화된다.
+
+DEGREES = 3
+TRANSLATE = 0.04
+SCALE = 0.25
+MOSAIC = 0.5
+CLOSE_MOSAIC = 20
+MIXUP = 0.0
 
 
 def _parse_float(value: str) -> Optional[float]:
@@ -251,8 +259,12 @@ def main() -> None:
         lr0=LR0,
         cos_lr=COS_LR,
         weight_decay = WEIGHT_DECAY,
-        degrees = 10, #추가
-        mixup = 0.1, #추가
+        degrees = DEGREES,
+        mixup = MIXUP,
+        translate = TRANSLATE,
+        scale = SCALE,
+        mosaic = MOSAIC,
+        close_mosaic = CLOSE_MOSAIC,
         patience=PATIENCE,
         pretrained=PRETRAINED,
         verbose=True,
@@ -277,7 +289,13 @@ def main() -> None:
         "lr0": LR0,
         "cos_lr": COS_LR,
         "weight_decay": WEIGHT_DECAY,
-        "seed": SEED
+        "seed": SEED,
+        "degrees": DEGREES,
+        "mixup": MIXUP,
+        "translate": TRANSLATE,
+        "scale": SCALE,
+        "mosaic": MOSAIC,
+        "close_mosaic": CLOSE_MOSAIC
     }, indent=2),
     encoding="utf-8"
 )

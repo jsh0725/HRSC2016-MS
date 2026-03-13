@@ -11,12 +11,12 @@ os.environ.setdefault("YOLO_CONFIG_DIR", str((Path.cwd() / ".ultralytics").resol
 
 
 # Simple run: python eval_test_yolo_obb.py
-WEIGHTS = Path("runs") / "obb" / "runs_yolo_obb" / "exp02" / "weights" / "best.pt"
+WEIGHTS = Path("runs") / "obb" / "runs_yolo_obb" / "exp04" / "weights" / "best.pt"
 DATASET_YAML = Path("processed_obb") / "dataset.yaml"
 TEST_IMAGES_DIR = Path("processed_obb") / "images" / "test"
 
 PROJECT_DIR = Path("runs_eval_obb")
-RUN_NAME = "test_exp02"
+RUN_NAME = "test_exp04"
 
 DEVICE = 0  # use "cpu" for CPU
 IMGSZ = 1024

@@ -1,106 +1,199 @@
-# HRSC2016-MS OBB 선박 탐지 프로젝트 정리
+# HRSC2016-MS OBB Training Summary
 
-## 1. 프로젝트 목적
-- HRSC2016-MS 데이터셋을 OBB(회전 바운딩 박스) 형식으로 전처리
-- YOLO OBB 모델(`yolo11n-obb.yaml`) 학습
-- 학습 결과(지표 + 시각화 이미지)를 정리하여 비교/분석 가능 상태로 구성
+## Overview
 
-## 2. 현재 폴더 구조
-| 경로 | 설명 |
-|---|---|
-| `archive/` | 원본 데이터(BMP, XML, split txt) | -> git에는 미업로드
-| `processed_obb/` | OBB 전처리 결과(`images/`, `labels/`, `dataset.yaml`) | -> git에는 미업로드
-| `runs/obb/runs_yolo_obb/exp01/` | 학습(Train)산출물 폴더, 에폭별 학습로그 + 학습 검증 시각화 + PR/F1 곡선 + confusion matrix + 샘플 배치 이미지 + weight 포함 |
-| `runs/obb/runs_eval_obb/test_exp01/` | 학습 완료 모델의 평가/추론 산출물 폴더, 테스트셋 정량 지표 + 테스트 이미지 예측 시각화(예측 박스 오버레이) 포함 |
-| `results/exp01/` | 중요한 PNG 시각화 파일만 재정리한 폴더 |
-| `processing_obb.py` | OBB 전처리 스크립트 |
-| `train_yolo_obb.py` | YOLO OBB 학습 + epoch 메트릭/곡선 저장 |
-| `eval_test_yolo_obb.py` | 테스트셋 평가/시각화 스크립트 |
+This repository trains YOLO OBB models on the processed HRSC2016-MS dataset and tracks experiment outputs under `runs/obb/`.
 
-## 3. 실행 순서
-```bash
-python processing_obb.py
-python train_yolo_obb.py
-python eval_test_yolo_obb.py
-```
+- Dataset config: `processed_obb/dataset.yaml`
+- Train outputs: `runs/obb/runs_yolo_obb/expXX/`
+- Test outputs: `runs/obb/runs_eval_obb/test_expXX/`
 
-## 4. 전처리 결과 요약
-기준 파일: `processed_obb/summary.json`
+## Experiment Summary
 
-| Split | 입력 ID | 출력 이미지 | 출력 라벨 | 객체 수 | 누락/오류 |
-|---|---:|---:|---:|---:|---:|
-| train | 610 | 610 | 610 | 2453 | 0 |
-| val | 460 | 460 | 460 | 1953 | 0 |
-| test | 610 | 610 | 610 | 3249 | 0 |
+The table below summarizes the four training runs completed so far.
 
-## 5. 학습 설정 요약
-기준 파일: `runs/obb/runs_yolo_obb/exp01/args.yaml`
+| Exp | Model source | Pretrained | Main changes from previous run | Epochs recorded | Best train mAP50 | Best train mAP50-95 | Test mAP50 | Test mAP50-95 |
+|---|---|---:|---|---:|---:|---:|---:|---:|
+| exp01 | `yolo11n-obb.yaml` | No | Baseline nano architecture, default augmentation bias | 150 | 0.84586 | 0.63890 | 0.72745 | 0.53514 |
+| exp02 | `yolo11n-obb.yaml` | No | Longer training, lower LR, cosine LR, lighter geometry, mixup added | 350 | 0.85019 | 0.65126 | 0.76033 | 0.57438 |
+| exp03 | `yolo11s-obb.yaml` | No | Model scaled from nano to small, lower LR, reduced augmentation strength | 292 | 0.84741 | 0.64421 | 0.68383 | 0.49955 |
+| exp04 | `yolo11s-obb.pt` | Yes | Small model with pretrained weights, conservative LR, same light augmentation | 250 | 0.91342 | 0.73890 | 0.76788 | 0.60135 |
 
-| 항목 | 값 |
-|---|---|
-| task | `obb` |
-| model | `yolo11n-obb.yaml` |
-| data | `processed_obb/dataset.yaml` |
-| epochs | `150` |
-| imgsz | `1024` |
-| batch | `8` |
-| patience | `30` |
-| device | `0` (GPU) |
-| pretrained | `false` |
+Notes:
 
-## 6. 학습 성능 요약 (최종 epoch)
-기준 파일: `runs/obb/runs_yolo_obb/exp01/results.csv` 마지막 행(epoch 150)
+- Current `exp02` directory contains the run originally created as `exp022` and later renamed.
+- `Epochs recorded` reflects the actual rows saved in `results.csv`, not only the configured maximum epoch count.
+- Test metrics come from `runs/obb/runs_eval_obb/test_expXX/test_metrics_summary.json`.
 
-| 지표 | 값 |
-|---|---:|
-| precision(B) | 0.87319 |
-| recall(B) | 0.72248 |
-| mAP50(B) | 0.84542 | -> 탐지 성능(약 84.5%)
-| mAP50-95(B) | 0.63890 |
-| train box/cls/dfl/angle loss | 0.77847 / 0.62511 / 1.20347 / 0.01031 |
-| val box/cls/dfl/angle loss | 0.91780 / 0.75775 / 1.34508 / 0.01078 |
+## Detailed Run Configuration
 
-## 7. 시각화 파일 매칭(의미 정리)
+### exp01
 
-### 7.1 `results/exp01/overview`
-| 파일 | 의미 |
-|---|---|
-| `results.png` | 전체 학습 추세를 요약한 종합 그래프(손실/성능) |
+- Train dir: `runs/obb/runs_yolo_obb/exp01`
+- Test dir: `runs/obb/runs_eval_obb/test_exp01`
+- Model: `yolo11n-obb.yaml`
+- Pretrained weights: `False`
+- Key hyperparameters:
+  - `epochs=150`
+  - `batch=8`
+  - `imgsz=1024`
+  - `lr0=0.01`
+  - `cos_lr=False`
+  - `weight_decay=0.0005`
+  - `patience=30`
+  - `degrees=0.0`
+  - `translate=0.1`
+  - `scale=0.5`
+  - `mosaic=1.0`
+  - `mixup=0.0`
 
-### 7.2 `results/exp01/metrics_curves`
-| 파일 | 의미 |
-|---|---|
-| `BoxPR_curve.png` | Precision-Recall 곡선 |
-| `BoxF1_curve.png` | F1 곡선(precision/recall 균형) |
-| `BoxP_curve.png` | precision 변화 추세 |
-| `BoxR_curve.png` | recall 변화 추세 |
+Training metrics:
 
-### 7.3 `results/exp01/confusion`
-| 파일 | 의미 |
-|---|---|
-| `confusion_matrix.png` | 혼동행렬(절대 개수 기준) |
-| `confusion_matrix_normalized.png` | 혼동행렬(정규화 비율 기준) |
+- Final: `precision=0.87319`, `recall=0.72248`, `mAP50=0.84542`, `mAP50-95=0.63890`
+- Best train: `mAP50=0.84586` at epoch `149`, `mAP50-95=0.63890` at epoch `151`
+- Final losses: `train_loss_sum=2.60705`, `val_loss_sum=3.02063`
 
-### 7.4 `results/exp01/custom_curves`
-| 파일 | 의미 |
-|---|---|
-| `loss_curve.png` | train/val 손실 곡선(커스텀 저장본) |
-| `accuracy_curve.png` | accuracy-like(mAP 계열) 곡선(커스텀 저장본) |
+Test metrics:
 
-## 8. 추가 참고: 학습 배치 샘플 이미지(원본 runs 폴더)
-경로: `runs/obb/runs_yolo_obb/exp01/`
+- `precision=0.80825`
+- `recall=0.59698`
+- `mAP50=0.72745`
+- `mAP50-95=0.53514`
 
-| 파일 | 의미 |
-|---|---|
-| `train_batch*.jpg` | 학습 배치 입력 샘플(증강 포함) |
-| `val_batch*_labels.jpg` | 검증 배치 GT 라벨 시각화 |
-| `val_batch*_pred.jpg` | 같은 검증 배치에 대한 모델 예측 결과 |
-| `labels.jpg` | 데이터셋 라벨 요약 시각화 |
+### exp02
 
-## 9. 가중치 파일
-경로: `runs/obb/runs_yolo_obb/exp01/weights/`
+- Train dir: `runs/obb/runs_yolo_obb/exp02`
+- Test dir: `runs/obb/runs_eval_obb/test_exp02`
+- Original run name in `args.yaml`: `exp022`
+- Model: `yolo11n-obb.yaml`
+- Pretrained weights: `False`
+- Main changes vs exp01:
+  - `epochs: 150 -> 350`
+  - `batch: 8 -> 6`
+  - `lr0: 0.01 -> 0.003`
+  - `cos_lr: False -> True`
+  - `patience: 30 -> 80`
+  - `degrees: 0.0 -> 5`
+  - `translate: 0.1 -> 0.05`
+  - `scale: 0.5 -> 0.3`
+  - `mosaic: 1.0 -> 0.7`
+  - `mixup: 0.0 -> 0.03`
+  - `close_mosaic: 10 -> 20`
 
-| 파일 | 의미 |
-|---|---|
-| `best.pt` | 검증 성능 기준 최고 체크포인트 |
-| `last.pt` | 마지막 epoch 체크포인트 |
+Training metrics:
+
+- Final: `precision=0.88961`, `recall=0.73425`, `mAP50=0.84008`, `mAP50-95=0.64607`
+- Best train: `mAP50=0.85019` at epoch `234`, `mAP50-95=0.65126` at epoch `291`
+- Final losses: `train_loss_sum=2.01594`, `val_loss_sum=3.01612`
+
+Test metrics:
+
+- `precision=0.81411`
+- `recall=0.64317`
+- `mAP50=0.76033`
+- `mAP50-95=0.57438`
+
+Interpretation:
+
+- Best generalization among the first three runs.
+- Longer training and lighter augmentation improved test performance over the baseline.
+
+### exp03
+
+- Train dir: `runs/obb/runs_yolo_obb/exp03`
+- Test dir: `runs/obb/runs_eval_obb/test_exp03`
+- Model: `yolo11s-obb.yaml`
+- Pretrained weights: `False`
+- Main changes vs exp02:
+  - Model scaled from `yolo11n-obb.yaml` to `yolo11s-obb.yaml`
+  - `epochs: 350 -> 300`
+  - `batch: 6 -> 4`
+  - `lr0: 0.003 -> 0.002`
+  - `weight_decay: 0.0005 -> 0.0007`
+  - `patience: 80 -> 50`
+  - `degrees: 5 -> 3`
+  - `translate: 0.05 -> 0.04`
+  - `scale: 0.3 -> 0.25`
+  - `mosaic: 0.7 -> 0.5`
+  - `mixup: 0.03 -> 0.0`
+  - `close_mosaic: 20 -> 25`
+
+Training metrics:
+
+- Final: `precision=0.86582`, `recall=0.74296`, `mAP50=0.84271`, `mAP50-95=0.63901`
+- Best train: `mAP50=0.84741` at epoch `224`, `mAP50-95=0.64421` at epoch `243`
+- Final losses: `train_loss_sum=1.87925`, `val_loss_sum=3.05798`
+
+Test metrics:
+
+- `precision=0.80755`
+- `recall=0.52063`
+- `mAP50=0.68383`
+- `mAP50-95=0.49955`
+
+Interpretation:
+
+- Increasing model size without pretrained weights did not improve generalization.
+- This run shows the clearest gap between train metrics and test metrics.
+
+### exp04
+
+- Train dir: `runs/obb/runs_yolo_obb/exp04`
+- Test dir: `runs/obb/runs_eval_obb/test_exp04`
+- Model: `yolo11s-obb.pt`
+- Pretrained weights: `True`
+- Main changes vs exp03:
+  - Model source switched from architecture-only `yolo11s-obb.yaml` to pretrained `yolo11s-obb.pt`
+  - `epochs: 300 -> 250`
+  - `lr0: 0.002 -> 0.0015`
+  - `weight_decay: 0.0007 -> 0.0005`
+  - `close_mosaic: 25 -> 20`
+  - Other core augmentation settings kept similar
+
+Training metrics:
+
+- Final: `precision=0.90873`, `recall=0.84383`, `mAP50=0.90824`, `mAP50-95=0.73710`
+- Best train: `mAP50=0.91342` at epoch `216`, `mAP50-95=0.73890` at epoch `217`
+- Final losses: `train_loss_sum=1.34591`, `val_loss_sum=2.68375`
+
+Test metrics:
+
+- `precision=0.92095`
+- `recall=0.59544`
+- `mAP50=0.76788`
+- `mAP50-95=0.60135`
+
+Interpretation:
+
+- Best overall run so far.
+- Pretrained small model delivered the highest test `mAP50` and test `mAP50-95`.
+- Test recall is still lower than the train recall trend, so recall-focused tuning remains possible.
+
+## Conclusions
+
+1. `exp01` established a stable baseline with nano architecture and no pretrained weights.
+2. `exp02` improved generalization by tuning schedule and augmentation while staying on the nano architecture.
+3. `exp03` showed that a larger architecture alone is not enough on this dataset when trained from scratch.
+4. `exp04` confirmed that pretrained weights matter more than architecture size alone for this project.
+
+## Recommended Current Model
+
+Use `runs/obb/runs_yolo_obb/exp04/weights/best.pt` as the current best checkpoint.
+
+- Best test `mAP50`: `0.76788`
+- Best test `mAP50-95`: `0.60135`
+
+## Reference Files
+
+- `runs/obb/runs_yolo_obb/exp01/args.yaml`
+- `runs/obb/runs_yolo_obb/exp02/args.yaml`
+- `runs/obb/runs_yolo_obb/exp03/args.yaml`
+- `runs/obb/runs_yolo_obb/exp04/args.yaml`
+- `runs/obb/runs_yolo_obb/exp01/results.csv`
+- `runs/obb/runs_yolo_obb/exp02/results.csv`
+- `runs/obb/runs_yolo_obb/exp03/results.csv`
+- `runs/obb/runs_yolo_obb/exp04/results.csv`
+- `runs/obb/runs_eval_obb/test_exp01/test_metrics_summary.json`
+- `runs/obb/runs_eval_obb/test_exp02/test_metrics_summary.json`
+- `runs/obb/runs_eval_obb/test_exp03/test_metrics_summary.json`
+- `runs/obb/runs_eval_obb/test_exp04/test_metrics_summary.json`
