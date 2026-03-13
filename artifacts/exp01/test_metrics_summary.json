@@ -1,0 +1,13 @@
+{
+  "weights": "C:\\Users\\USER\\Documents\\python_projects\\HRSC2016-MS\\runs\\obb\\runs_yolo_obb\\exp01\\weights\\best.pt",
+  "dataset_yaml": "C:\\Users\\USER\\Documents\\python_projects\\HRSC2016-MS\\processed_obb\\dataset.yaml",
+  "test_images_dir": "C:\\Users\\USER\\Documents\\python_projects\\HRSC2016-MS\\processed_obb\\images\\test",
+  "run_dir": "C:\\Users\\USER\\Documents\\python_projects\\HRSC2016-MS\\runs\\obb\\runs_eval_obb\\test_exp01",
+  "metrics": {
+    "precision": 0.8082534389328887,
+    "recall": 0.5969827586206896,
+    "mAP50": 0.7274495730776209,
+    "mAP50_95": 0.5351406820692974,
+    "fitness": 0.5351406820692974
+  }
+}

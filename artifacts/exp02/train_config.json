@@ -1,0 +1,17 @@
+{
+  "model": "yolo11n-obb.yaml",
+  "epochs": 350,
+  "imgsz": 1024,
+  "batch": 6,
+  "lr0": 0.003,
+  "cos_lr": true,
+  "weight_decay": 0.0005,
+  "seed": 42,
+  "degrees": 5,
+  "mixup": 0.03,
+  "translate": 0.05,
+  "scale": 0.3,
+  "fliplr": 0.5,
+  "mosaic": 0.7,
+  "close_mosaic": 20
+}

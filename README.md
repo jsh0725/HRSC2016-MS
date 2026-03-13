@@ -7,6 +7,7 @@ This repository trains YOLO OBB models on the processed HRSC2016-MS dataset and 
 - Dataset config: `processed_obb/dataset.yaml`
 - Train outputs: `runs/obb/runs_yolo_obb/expXX/`
 - Test outputs: `runs/obb/runs_eval_obb/test_expXX/`
+- Versioned lightweight artifacts: `artifacts/expXX/`
 
 ## Experiment Summary
 
@@ -24,6 +25,7 @@ Notes:
 - Current `exp02` directory contains the run originally created as `exp022` and later renamed.
 - `Epochs recorded` reflects the actual rows saved in `results.csv`, not only the configured maximum epoch count.
 - Test metrics come from `runs/obb/runs_eval_obb/test_expXX/test_metrics_summary.json`.
+- The repository tracks compact experiment artifacts under `artifacts/expXX/` instead of committing the full `runs/` tree.
 
 ## Detailed Run Configuration
 
@@ -183,17 +185,36 @@ Use `runs/obb/runs_yolo_obb/exp04/weights/best.pt` as the current best checkpoin
 - Best test `mAP50`: `0.76788`
 - Best test `mAP50-95`: `0.60135`
 
+## Versioned Artifacts
+
+Each `artifacts/expXX/` folder contains the compact files kept in git for sharing and review:
+
+- `args.yaml`
+- `train_config.json` when available
+- `results.csv`
+- `results.png`
+- `loss_curve.png`
+- `accuracy_curve.png`
+- `BoxPR_curve.png`
+- `BoxF1_curve.png`
+- `BoxP_curve.png`
+- `BoxR_curve.png`
+- `confusion_matrix.png`
+- `confusion_matrix_normalized.png`
+- `epoch_metrics.json`
+- `test_metrics_summary.json`
+
 ## Reference Files
 
-- `runs/obb/runs_yolo_obb/exp01/args.yaml`
-- `runs/obb/runs_yolo_obb/exp02/args.yaml`
-- `runs/obb/runs_yolo_obb/exp03/args.yaml`
-- `runs/obb/runs_yolo_obb/exp04/args.yaml`
-- `runs/obb/runs_yolo_obb/exp01/results.csv`
-- `runs/obb/runs_yolo_obb/exp02/results.csv`
-- `runs/obb/runs_yolo_obb/exp03/results.csv`
-- `runs/obb/runs_yolo_obb/exp04/results.csv`
-- `runs/obb/runs_eval_obb/test_exp01/test_metrics_summary.json`
-- `runs/obb/runs_eval_obb/test_exp02/test_metrics_summary.json`
-- `runs/obb/runs_eval_obb/test_exp03/test_metrics_summary.json`
-- `runs/obb/runs_eval_obb/test_exp04/test_metrics_summary.json`
+- `artifacts/exp01/args.yaml`
+- `artifacts/exp02/args.yaml`
+- `artifacts/exp03/args.yaml`
+- `artifacts/exp04/args.yaml`
+- `artifacts/exp01/results.csv`
+- `artifacts/exp02/results.csv`
+- `artifacts/exp03/results.csv`
+- `artifacts/exp04/results.csv`
+- `artifacts/exp01/test_metrics_summary.json`
+- `artifacts/exp02/test_metrics_summary.json`
+- `artifacts/exp03/test_metrics_summary.json`
+- `artifacts/exp04/test_metrics_summary.json`
