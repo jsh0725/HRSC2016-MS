@@ -1,0 +1,18 @@
+{
+  "model": "yolo11m-obb.pt",
+  "epochs": 260,
+  "imgsz": 1024,
+  "batch": 2,
+  "lr0": 0.001,
+  "cos_lr": true,
+  "weight_decay": 0.00035,
+  "seed": 42,
+  "patience": 40,
+  "pretrained": true,
+  "workers": 2,
+  "degrees": 2,
+  "translate": 0.08,
+  "scale": 0.35,
+  "mosaic": 0.35,
+  "close_mosaic": 15
+}

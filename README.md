@@ -11,7 +11,7 @@ This repository trains YOLO OBB models on the processed HRSC2016-MS dataset and 
 
 ## Experiment Summary
 
-The table below summarizes the four training runs completed so far.
+The table below summarizes the five training runs completed so far.
 
 | Exp | Model source | Pretrained | Main changes from previous run | Epochs recorded | Best train mAP50 | Best train mAP50-95 | Test mAP50 | Test mAP50-95 |
 |---|---|---:|---|---:|---:|---:|---:|---:|
@@ -19,6 +19,7 @@ The table below summarizes the four training runs completed so far.
 | exp02 | `yolo11n-obb.yaml` | No | Longer training, lower LR, cosine LR, lighter geometry, mixup added | 350 | 0.85019 | 0.65126 | 0.76033 | 0.57438 |
 | exp03 | `yolo11s-obb.yaml` | No | Model scaled from nano to small, lower LR, reduced augmentation strength | 292 | 0.84741 | 0.64421 | 0.68383 | 0.49955 |
 | exp04 | `yolo11s-obb.pt` | Yes | Small model with pretrained weights, conservative LR, same light augmentation | 250 | 0.91342 | 0.73890 | 0.76788 | 0.60135 |
+| exp05 | `yolo11m-obb.pt` | Yes | Larger pretrained model, lower LR, smaller batch, stronger scale/translate, lighter mosaic | 260 | 0.91642 | 0.73374 | 0.76781 | 0.60690 |
 
 Notes:
 
@@ -171,19 +172,64 @@ Interpretation:
 - Pretrained small model delivered the highest test `mAP50` and test `mAP50-95`.
 - Test recall is still lower than the train recall trend, so recall-focused tuning remains possible.
 
+### exp05
+
+- Train dir: `runs/obb/runs_yolo_obb/exp05`
+- Test dir: `runs/obb/runs_eval_obb/test_exp05`
+- Model: `yolo11m-obb.pt`
+- Pretrained weights: `True`
+- Main changes vs exp04:
+  - Model scaled from `yolo11s-obb.pt` to `yolo11m-obb.pt`
+  - `epochs: 250 -> 260`
+  - `batch: 4 -> 2`
+  - `workers: 4 -> 2`
+  - `lr0: 0.0015 -> 0.0010`
+  - `weight_decay: 0.0005 -> 0.00035`
+  - `patience: 50 -> 40`
+  - `translate: 0.04 -> 0.08`
+  - `scale: 0.25 -> 0.35`
+  - `mosaic: 0.5 -> 0.35`
+  - `close_mosaic: 20 -> 15`
+
+Training metrics:
+
+- Final: `precision=0.91976`, `recall=0.83308`, `mAP50=0.91188`, `mAP50-95=0.73274`
+- Best train: `mAP50=0.91642` at epoch `118`, `mAP50-95=0.73374` at epoch `254`
+- Final losses: `train_loss_sum=1.45181`, `val_loss_sum=2.69084`
+
+Test metrics:
+
+- `precision=0.92493`
+- `recall=0.59175`
+- `mAP50=0.76781`
+- `mAP50-95=0.60690`
+
+Interpretation:
+
+- `mAP50` is effectively tied with `exp04`, but `mAP50-95` improved slightly.
+- Precision is the highest among all runs, while recall remains moderate.
+- Moving from `s` to `m` did not create a meaningful gain in `mAP50`, so the larger model mostly improved stricter IoU performance rather than broad recall.
+
 ## Conclusions
 
 1. `exp01` established a stable baseline with nano architecture and no pretrained weights.
 2. `exp02` improved generalization by tuning schedule and augmentation while staying on the nano architecture.
 3. `exp03` showed that a larger architecture alone is not enough on this dataset when trained from scratch.
 4. `exp04` confirmed that pretrained weights matter more than architecture size alone for this project.
+5. `exp05` showed that scaling from pretrained `s` to pretrained `m` gives only marginal gains on this dataset, mainly in `mAP50-95`, not in headline `mAP50`.
 
 ## Recommended Current Model
 
-Use `runs/obb/runs_yolo_obb/exp04/weights/best.pt` as the current best checkpoint.
+Use the checkpoint based on the metric you care about most:
 
-- Best test `mAP50`: `0.76788`
-- Best test `mAP50-95`: `0.60135`
+- Best test `mAP50`: `exp04` with `0.76788`
+- Best test `mAP50-95`: `exp05` with `0.60690`
+- Best test precision: `exp05` with `0.92493`
+
+Practical recommendation:
+
+- Use `runs/obb/runs_yolo_obb/exp04/weights/best.pt` if you prioritize overall balance and slightly better recall.
+- Use `runs/obb/runs_yolo_obb/exp05/weights/best.pt` if you prioritize stricter localization quality and precision.
 
 ## Versioned Artifacts
 
@@ -210,11 +256,14 @@ Each `artifacts/expXX/` folder contains the compact files kept in git for sharin
 - `artifacts/exp02/args.yaml`
 - `artifacts/exp03/args.yaml`
 - `artifacts/exp04/args.yaml`
+- `artifacts/exp05/args.yaml`
 - `artifacts/exp01/results.csv`
 - `artifacts/exp02/results.csv`
 - `artifacts/exp03/results.csv`
 - `artifacts/exp04/results.csv`
+- `artifacts/exp05/results.csv`
 - `artifacts/exp01/test_metrics_summary.json`
 - `artifacts/exp02/test_metrics_summary.json`
 - `artifacts/exp03/test_metrics_summary.json`
 - `artifacts/exp04/test_metrics_summary.json`
+- `artifacts/exp05/test_metrics_summary.json`
