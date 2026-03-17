@@ -11,7 +11,7 @@ This repository trains YOLO OBB models on the processed HRSC2016-MS dataset and 
 
 ## Experiment Summary
 
-The table below summarizes the five training runs completed so far.
+The table below summarizes the completed training runs tracked in this repo.
 
 | Exp | Model source | Pretrained | Main changes from previous run | Epochs recorded | Best train mAP50 | Best train mAP50-95 | Test mAP50 | Test mAP50-95 |
 |---|---|---:|---|---:|---:|---:|---:|---:|
@@ -20,6 +20,8 @@ The table below summarizes the five training runs completed so far.
 | exp03 | `yolo11s-obb.yaml` | No | Model scaled from nano to small, lower LR, reduced augmentation strength | 292 | 0.84741 | 0.64421 | 0.68383 | 0.49955 |
 | exp04 | `yolo11s-obb.pt` | Yes | Small model with pretrained weights, conservative LR, same light augmentation | 250 | 0.91342 | 0.73890 | 0.76788 | 0.60135 |
 | exp05 | `yolo11m-obb.pt` | Yes | Larger pretrained model, lower LR, smaller batch, stronger scale/translate, lighter mosaic | 260 | 0.91642 | 0.73374 | 0.76781 | 0.60690 |
+| exp07 | `yolo11m-obb.pt` | Yes | Weak augmentation profile to reduce small-object distortion, early stopping | 155 | 0.89888 | 0.70589 | 0.75259 | 0.57102 |
+| exp08 | `yolo11m-obb.pt` | Yes | Same hyperparameters as exp07, but dataset switched to random split (`processed_obb_random`) | 500 | 0.92508 | 0.75618 | 0.90605 | 0.74919 |
 
 Notes:
 
@@ -210,26 +212,92 @@ Interpretation:
 - Precision is the highest among all runs, while recall remains moderate.
 - Moving from `s` to `m` did not create a meaningful gain in `mAP50`, so the larger model mostly improved stricter IoU performance rather than broad recall.
 
+### exp07
+
+- Train dir: `runs/obb/runs_yolo_obb/exp07`
+- Test dir: `runs/obb/runs_eval_obb/test_exp07`
+- Model: `yolo11m-obb.pt`
+- Pretrained weights: `True`
+- Main changes vs exp05:
+  - `epochs: 260 -> 500` (actual run stopped earlier)
+  - Weak augmentation profile for small-object robustness:
+    - `degrees: 2 -> 1`
+    - `translate: 0.08 -> 0.02`
+    - `scale: 0.35 -> 0.10`
+    - `mosaic: 0.35 -> 0.15`
+    - `close_mosaic: 15 -> 10`
+    - `fliplr: 0.5 -> 0.3`
+    - `hsv_h/s/v` reduced, `erasing=0.0`
+
+Training metrics:
+
+- Final: `precision=0.89307`, `recall=0.80395`, `mAP50=0.88315`, `mAP50-95=0.69357`
+- Best train: `mAP50=0.89888` at epoch `116`, `mAP50-95=0.70589` at epoch `116`
+- Final losses: `train_loss_sum=1.71503`, `val_loss_sum=2.84785`
+
+Test metrics:
+
+- `precision=0.91182`
+- `recall=0.56989`
+- `mAP50=0.75259`
+- `mAP50-95=0.57102`
+
+Interpretation:
+
+- Weak augmentation alone did not improve test generalization over exp05.
+- The train-test gap remained large, especially in recall.
+
+### exp08
+
+- Train dir: `runs/obb/runs_yolo_obb/exp08`
+- Test dir: `runs/obb/runs_eval_obb/test_exp08`
+- Model: `yolo11m-obb.pt`
+- Pretrained weights: `True`
+- Main changes vs exp07:
+  - Hyperparameters kept nearly identical
+  - Dataset switched from fixed split (`processed_obb`) to random split (`processed_obb_random`, 7:2:1, seed=42)
+
+Training metrics:
+
+- Final: `precision=0.91763`, `recall=0.85481`, `mAP50=0.91993`, `mAP50-95=0.75569`
+- Best train: `mAP50=0.92508` at epoch `54`, `mAP50-95=0.75618` at epoch `480`
+- Final losses: `train_loss_sum=1.12427`, `val_loss_sum=2.70394`
+
+Test metrics:
+
+- `precision=0.95409`
+- `recall=0.83543`
+- `mAP50=0.90605`
+- `mAP50-95=0.74919`
+
+Interpretation:
+
+- Large improvement versus exp07 on all test metrics.
+- This indicates split/distribution design was a major bottleneck.
+- If strict benchmark comparability is required, verify no split leakage risk from near-duplicate scenes.
+
 ## Conclusions
 
 1. `exp01` established a stable baseline with nano architecture and no pretrained weights.
 2. `exp02` improved generalization by tuning schedule and augmentation while staying on the nano architecture.
 3. `exp03` showed that a larger architecture alone is not enough on this dataset when trained from scratch.
 4. `exp04` confirmed that pretrained weights matter more than architecture size alone for this project.
-5. `exp05` showed that scaling from pretrained `s` to pretrained `m` gives only marginal gains on this dataset, mainly in `mAP50-95`, not in headline `mAP50`.
+5. `exp05` showed that scaling from pretrained `s` to pretrained `m` gave only marginal gains on the fixed split.
+6. `exp07` showed weak-augmentation tuning alone could not solve low test recall.
+7. `exp08` demonstrated that random split reconstruction dramatically improved test generalization, highlighting data split/distribution as the dominant factor.
 
 ## Recommended Current Model
 
 Use the checkpoint based on the metric you care about most:
 
-- Best test `mAP50`: `exp04` with `0.76788`
-- Best test `mAP50-95`: `exp05` with `0.60690`
-- Best test precision: `exp05` with `0.92493`
+- Best test `mAP50`: `exp08` with `0.90605`
+- Best test `mAP50-95`: `exp08` with `0.74919`
+- Best test precision: `exp08` with `0.95409`
 
 Practical recommendation:
 
-- Use `runs/obb/runs_yolo_obb/exp04/weights/best.pt` if you prioritize overall balance and slightly better recall.
-- Use `runs/obb/runs_yolo_obb/exp05/weights/best.pt` if you prioritize stricter localization quality and precision.
+- Use `runs/obb/runs_yolo_obb/exp08/weights/best.pt` for the strongest current performance on the randomized split.
+- Keep `exp04`/`exp05` as fixed-split references for comparison continuity.
 
 ## Versioned Artifacts
 
@@ -257,13 +325,19 @@ Each `artifacts/expXX/` folder contains the compact files kept in git for sharin
 - `artifacts/exp03/args.yaml`
 - `artifacts/exp04/args.yaml`
 - `artifacts/exp05/args.yaml`
+- `artifacts/exp07/args.yaml`
+- `artifacts/exp08/args.yaml`
 - `artifacts/exp01/results.csv`
 - `artifacts/exp02/results.csv`
 - `artifacts/exp03/results.csv`
 - `artifacts/exp04/results.csv`
 - `artifacts/exp05/results.csv`
+- `artifacts/exp07/results.csv`
+- `artifacts/exp08/results.csv`
 - `artifacts/exp01/test_metrics_summary.json`
 - `artifacts/exp02/test_metrics_summary.json`
 - `artifacts/exp03/test_metrics_summary.json`
 - `artifacts/exp04/test_metrics_summary.json`
 - `artifacts/exp05/test_metrics_summary.json`
+- `artifacts/exp07/test_metrics_summary.json`
+- `artifacts/exp08/test_metrics_summary.json`
