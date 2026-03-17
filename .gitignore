@@ -5,6 +5,7 @@ __pycache__/
 # Dataset and generated data
 archive/
 processed_obb/
+processed_obb_random/
 *.cache
 
 # Training outputs
